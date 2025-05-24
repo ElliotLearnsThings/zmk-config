@@ -7,56 +7,126 @@
 #include <behaviors.dtsi>
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/bt.h>
+#include <dt-bindings/zmk/outputs.h> // For &out
+#include <dt-bindings/zmk/power.h>   // For &shutdown if your board supports it
+
+// Note: For Swedish keys (SE_ADIA, SE_ODIA, SE_AA), you might need to include
+// a specific keycode header if it's not part of your board's default includes,
+// e.g., #include <dt-bindings/zmk/keycodes/se.h>
+// Or, define them using macros if these specific codes aren't available.
+// Standard keycodes like DE_ADIA etc., might also work depending on OS settings.
+// Assuming SE_... are available or defined elsewhere for Swedish OS layout.
+// Using placeholders that might require AltGr on a US-Intl layout, or direct SE keycodes.
+#define SE_ADIA LA(N0) // Placeholder for Ä. Example: RALT+'q' for US-Intl. Adjust if needed. For Swedish layout, it's often a dedicated key.
+#define SE_ODIA LA(N1) // Placeholder for Ö. Example: RALT+'p' for US-Intl.
+#define SE_AA   LA(N2) // Placeholder for Å. Example: RALT+'w' for US-Intl.
+
 
 / {
+    // Define layer names for clarity and easier management
+    #define QWERTY_LAYER 0
+    #define DVORAK_LAYER 1
+    #define LOWER_LAYER  2 // Was layer 1
+    #define RAISE_LAYER  3 // Was layer 2
+    #define META_LAYER   4 // New layer for when LWR and RSE are both active
+
     keymap {
         compatible = "zmk,keymap";
 
-        default_layer {
-        /* NOTES
-           GUI == SUPER
-           ----------------------------------------------------------------------------------------- (BASE)
-           |  TAB |  Q  |  W  |  E   |  R  |  T  |    |  Y   |  U   |  I  |  O  |  P  | ENT  |
-           | ESC  |  A  |  S  |  D   |  F  |  G  |    |  H   |  J   |  K  |  L  |  ;  |  '   |
-           | CTRL |  Z  |  X  |  C   |  V  |  B  |    |  N   |  M   |  ,  |  .  |  /  | GUI  |
-                                | SHFT | LWR | SPC |    | BSPC | RSE  | ALT |
-        */
+        default_layer { // Layer 0: QWERTY
+            label = "QWERTY";
+            /* NOTES
+               GUI == SUPER
+               ----------------------------------------------------------------------------------------- (QWERTY BASE)
+               |  TAB |  Q  |  W  |  E   |  R  |  T  |     |  Y   |  U   |  I  |  O  |  P  | ENT  |
+               | ESC  |  A  |  S  |  D   |  F  |  G  |     |  H   |  J   |  K  |  L  |  ;  |  '   |
+               | CTRL |  Z  |  X  |  C   |  V  |  B  |     |  N   |  M   |  ,  |  .  |  /  | GUI  |
+                                  | SHFT | LWR | SPC |     | BSPC | RSE  | ALT |
+            */
             bindings = <
-    &kp TAB     &kp Q  &kp W  &kp E   &kp R  &kp T       &kp Y   &kp U   &kp I   &kp O  &kp P    &kp RET
-    &kp ESC     &kp A  &kp S  &kp D   &kp F  &kp G       &kp H   &kp J   &kp K   &kp L  &kp SEMI &kp SQT
-    &kp LCTRL   &kp Z  &kp X  &kp C   &kp V  &kp B       &kp N   &kp M   &kp COMMA &kp DOT  &kp FSLH &kp LGUI
-                            &kp LSHFT &mo 1 &kp SPACE   &kp BSPC &mo 2 &kp RALT
+    &kp TAB      &kp Q        &kp W        &kp E        &kp R        &kp T                 &kp Y        &kp U        &kp I        &kp O        &kp P         &kp RET
+    &kp ESC      &kp A        &kp S        &kp D        &kp F        &kp G                 &kp H        &kp J        &kp K        &kp L        &kp SEMI      &kp SQT
+    &kp LCTRL    &kp Z        &kp X        &kp C        &kp V        &kp B                 &kp N        &kp M        &kp COMMA    &kp DOT      &kp FSLH      &kp LGUI
+                                          &kp LSHFT    &mo LOWER_LAYER  &kp SPACE         &kp BSPC     &mo RAISE_LAYER  &kp RALT
             >;
         };
 
-        lower_layer { // Layer 1 (LWR)
-        /* ----------------------------------------------------------------------------------------- (LWR)
-           |  TAB |      |  5  |  0   |      |      |    |       |  0  |  6  |      |      |    ENT    |
-           | ESC  |  1  |  2  |  3   |  4  |  5  |    |  6   |  7  |  8  |  9  |      | BTCLR |
-           | CTRL |      |      |      |      |      |    | LFT  | DWN |  UP | RGT |      | GUI   |
-                                | SHFT |      | SPC |    | BSPC |      | ALT |
-        */
+        dvorak_layer { // Layer 1: DVORAK
+            label = "DVORAK";
+            /* ----------------------------------------------------------------------------------------- (DVORAK BASE)
+               |  TAB |  '  |  ,  |  .   |  P  |  Y  |     |  F   |  G   |  C  |  R  |  L  | ENT  |
+               | ESC  |  A  |  O  |  E   |  U  |  I  |     |  D   |  H   |  T  |  N  |  S  |  /   |
+               | CTRL |  ;  |  Q  |  J   |  K  |  X  |     |  B   |  M   |  W  |  V  |  Z  | GUI  |
+                                  | SHFT | LWR | SPC |     | BSPC | RSE  | ALT |
+            */
             bindings = <
-    &kp TAB     &trans &kp N5 &kp N0  &trans &trans      &trans &kp N0  &kp N6 &trans &trans &kp RET
-    &kp ESC     &kp N1 &kp N2 &kp N3  &kp N4 &kp N5      &kp N6 &kp N7  &kp N8 &kp N9 &trans &bt BT_CLR
-    &kp LCTRL   &trans &trans &trans &trans &trans      &kp LEFT &kp DOWN &kp UP &kp RIGHT &trans &kp LGUI
-                            &kp LSHFT &trans &kp SPACE   &kp BSPC &trans &kp RALT
+    &kp TAB      &kp SQT      &kp COMMA    &kp DOT      &kp P        &kp Y                 &kp F        &kp G        &kp C        &kp R        &kp L         &kp RET
+    &kp ESC      &kp A        &kp O        &kp E        &kp U        &kp I                 &kp D        &kp H        &kp T        &kp N        &kp S         &kp SLASH
+    &kp LCTRL    &kp SEMI     &kp Q        &kp J        &kp K        &kp X                 &kp B        &kp M        &kp W        &kp V        &kp Z         &kp LGUI
+                                          &kp LSHFT    &mo LOWER_LAYER  &kp SPACE         &kp BSPC     &mo RAISE_LAYER  &kp RALT
             >;
         };
 
-        raise_layer { // Layer 2 (RSE)
-        /* ----------------------------------------------------------------------------------------- (RSE)
-           |  TAB |  !  |  @  |  #   |  $  |  %  |    |  ^   |  &  |  * |  (  |  )  | ENT  |
-           |  ESC |  '  |  "  |  (   |  )  |  `  |    |  -   |  =  |  [  |  ]  |  \  |  `   |
-           | CTRL |      |      |      |      |  ~  |    |  _   |  +  |  {  |  }  | "|" | GUI  |
-                                | SHFT |      | SPC |    | BSPC |      | ALT |
-        */
+        lower_layer { // Layer 2 (LWR) - Numbers and Swedish Keys
+            label = "LOWER";
+            /* ----------------------------------------------------------------------------------------- (LWR)
+               |  TAB |  Ä  |  Ö  |  Å   |     |     |     |       |  0  |  6  |      |      |  ENT   |
+               | ESC  |  1  |  2  |  3   |  4  |  5  |     |  6    |  7  |  8  |  9   |      |  ' / / | <-- TRANSPARENT (was BT_CLR)
+               | CTRL |     |     |      |     |     |     | LFT   | DWN |  UP | RGT  |      | GUI    |
+                                  | SHFT | LWR | SPC |     | BSPC  | RSE_to_META | ALT |
+            */
             bindings = <
-    &kp TAB     &kp EXCL &kp AT &kp HASH &kp DLLR &kp PRCNT   &kp CARET &kp AMPS &kp ASTRK &kp LPAR &kp RPAR &kp RET
-    &kp ESC     &kp SQT &kp DQT &kp LPAR &kp RPAR &kp GRAVE   &kp MINUS &kp EQUAL &kp LBKT &kp RBKT &kp BSLH &kp GRAVE
-    &kp LCTRL   &trans &trans &trans &trans &kp TILDE         &kp UNDER &kp PLUS  &kp LBRC &kp RBRC &kp PIPE &kp LGUI
-                            &kp LSHFT &trans &kp SPACE       &kp BSPC &trans &kp RALT
+    &kp TAB      &kp SE_ADIA  &kp SE_ODIA  &kp SE_AA    &trans       &trans                &trans       &kp N0       &kp N6       &trans       &trans        &kp RET
+    &kp ESC      &kp N1       &kp N2       &kp N3       &kp N4       &kp N5                &kp N6       &kp N7       &kp N8       &kp N9       &trans        &trans  // <<< CHANGED from &bt BT_CLR to &trans
+    &kp LCTRL    &trans       &trans       &trans       &trans       &trans                &kp LEFT     &kp DOWN     &kp UP       &kp RIGHT    &trans        &kp LGUI
+                                          &kp LSHFT    &trans       &kp SPACE             &kp BSPC     &mo META_LAYER &kp RALT  // RSE key now activates META_LAYER
             >;
+        };
+
+        raise_layer { // Layer 3 (RSE) - Symbols
+            label = "RAISE";
+            /* ----------------------------------------------------------------------------------------- (RSE)
+               |  TAB |  !  |  @  |  #   |  $  |  %  |     |  ^   |  &   |  * |  (  |  )  | ENT  |
+               |  ESC |  '  |  "  |  (   |  )  |  `  |     |  -   |  =   |  [  |  ]  |  \  |  `   |
+               | CTRL |  ?  |  /  |  <   |  >  |  ~  |     |  _   |  +   |  {  |  }  |  |  | GUI  |
+                                  | SHFT | LWR_to_META | SPC |     | BSPC | RSE  | ALT |
+            */
+            bindings = <
+    &kp TAB      &kp EXCL     &kp AT       &kp HASH     &kp DLLR     &kp PRCNT             &kp CARET    &kp AMPS     &kp ASTRK    &kp LPAR     &kp RPAR      &kp RET
+    &kp ESC      &kp SQT      &kp DQT      &kp LPAR     &kp RPAR     &kp GRAVE             &kp MINUS    &kp EQUAL    &kp LBKT     &kp RBKT     &kp BSLH      &kp GRAVE
+    &kp LCTRL    &kp QMARK    &kp SLASH    &kp LT       &kp GT       &kp TILDE             &kp UNDER    &kp PLUS     &kp LBRC     &kp RBRC     &kp PIPE      &kp LGUI
+                                          &kp LSHFT    &mo META_LAYER &kp SPACE           &kp BSPC     &trans       &kp RALT // LWR key now activates META_LAYER
+            >;
+        };
+
+        meta_layer { // Layer 4 (META) - Media, BT, Power - active when LWR & RSE are held
+            label = "META";
+            /* ----------------------------------------------------------------------------------------- (META)
+               |VolUp |BriUp|     |      |      |      |     |BT_NXT|BT_PRV|BT_SEL 0|BT_SEL 1|BT_SEL 2| Reset|
+               |VolDn |BriDn|     |      |      |      |     |BT_SEL 3|BT_SEL 4| BT_CLR |      |      |      |  <- BT_CLR is here
+               | Mute |PlayP|NextT|PrevT |      |      |     |      |      |      |      |      | SHUTDOWN |
+                                  | SHFT | LWR | SPC |     | BSPC | RSE  | ALT |
+            */
+            bindings = <
+    &kp C_VOL_UP &kp C_BRI_UP &trans       &trans       &trans       &trans                &bt BT_NXT   &bt BT_PRV   &bt BT_SEL 0 &bt BT_SEL 1 &bt BT_SEL 2  &reset // Or &bootloader
+    &kp C_VOL_DN &kp C_BRI_DN &trans       &trans       &trans       &trans                &bt BT_SEL 3 &bt BT_SEL 4 &bt BT_CLR   &trans       &trans        &trans
+    &kp C_MUTE   &kp C_PLAY_PAUSE &kp C_NEXT_TRACK &kp C_PREV_TRACK &trans &trans          &trans       &trans       &trans       &trans       &trans        &shutdown // Or &bootloader or &sys_power SYS_POWER_OFF
+                                          &trans       &trans       &trans                &trans       &trans       &trans // Keep thumb cluster transparent or map as needed
+            >;
+        };
+    }; // End of keymap
+
+    combos {
+        compatible = "zmk,combos";
+        qwerty_dvorak_toggle {
+            timeout-ms = <50>; // Adjust if needed
+            // Key positions for LSHFT (36), LWR (37), RSE (40), RALT (41)
+            // These positions are 0-indexed from your bindings array.
+            // Row 1: 0-11, Row 2: 12-23, Row 3: 24-35
+            // Thumb row: LSHFT(36) LWR(37) SPACE(38) BSPC(39) RSE(40) RALT(41)
+            key-positions = <36 37 40 41>; // LSHFT, LWR (&mo LOWER_LAYER), RSE (&mo RAISE_LAYER), RALT
+            bindings = <&tog DVORAK_LAYER>; // Toggles between QWERTY (0) and DVORAK (1)
+            layers = <QWERTY_LAYER DVORAK_LAYER>; // Make combo active on both base layers
         };
     };
 };
