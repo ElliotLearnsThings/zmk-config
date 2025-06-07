@@ -36,7 +36,7 @@
 &kp TAB    &kp EXCL   &kp AT     &kp HASH    &kp DLLR  &kp PRCNT    &kp CARET  &kp AMPS  &kp ASTRK  &kp LPAR   &kp RPAR       &kp RET
 &kp ESC    &kp SQT    &kp DOT    &kp LPAR    &kp RPAR  &kp GRAVE    &kp MINUS  &kp LBKT  &kp RBKT   &kp EQUAL  &kp BACKSLASH  &kp GRAVE
 &kp LCTRL  &kp QMARK  &kp SLASH  &kp LT      &kp GT    &kp TILDE    &kp UNDER  &kp LBRC  &kp RBRC   &kp PLUS   &kp PIPE       &kp LGUI
-                                 &kp LSHIFT  &mo 3    &kp SPACE    &kp BSPC   &trans     &kp RALT
+                                 &kp LSHIFT  &mo 3    &kp SPACE    &kp BSPC   &trans     &kp LALT
             >;
         };
 
