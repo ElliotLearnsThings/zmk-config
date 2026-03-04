@@ -1,7 +1,35 @@
 /*
- * Copyright (c) 2020 The ZMK Contributors
+ * Corne v3 — Dvorak + Full HRM (no shift on HRM)
+ * 
+ * MODIFIER STRATEGY:
+ *   HRM:       A=GUI  O=ALT  U=CTL  |  H=CTL  N=ALT  S=GUI  (GACS, no shift)
+ *   Shift:     L1/R1 thumb hold (physical fallback)
+ *   One-shot:  L1+R1 combo → OSM Shift
+ *   Caps Word: Left outer bottom column key
+ *   Reserved:  Right outer bottom column key (&trans)
  *
- * SPDX-License-Identifier: MIT
+ * LAYER MAP:
+ *   0  Base       — Dvorak + HRM
+ *   1  L1         — Symbols right hand / Swedish left hand
+ *   2  L2         — Vim motions right / Numbers left
+ *   3  R1         — Symbols left hand
+ *   4  R2         — Numpad
+ *   5  L1+L2      — F-keys left / Mouse right
+ *   6  R1+R2      — BT / System
+ *   7  L2+R2      — Sway / Buffer switching
+ *
+ * COMBO LIST:
+ *   L1+R1          → One-shot Shift
+ *   Num layer 12   → (
+ *   Num layer 23   → )
+ *   Num layer 45   → [
+ *   Num layer 56   → ]
+ *   Num layer 78   → {
+ *   Num layer 89   → }
+ *
+ * FREED KEYS (leave &trans, assign later if HRM feels good):
+ *   Left  col bottom (old LCTRL): CAPS_WORD  ← assigned
+ *   Right col bottom (old LGUI):  &trans     ← reserved
  */
 
 #include <behaviors.dtsi>
@@ -9,46 +37,334 @@
 #include <dt-bindings/zmk/keys.h>
 #include <dt-bindings/zmk/pointing.h>
 
-#define ZMK_POINTING_DEFAULT_MOVE_VAL 1500  // default: 600
-#define ZMK_POINTING_DEFAULT_SCRL_VAL 20    // default: 10
+// ---------------------------------------------------------------------------
+// Pointing defaults
+// ---------------------------------------------------------------------------
+#define ZMK_POINTING_DEFAULT_MOVE_VAL 1500
+#define ZMK_POINTING_DEFAULT_SCRL_VAL 20
 
+// ---------------------------------------------------------------------------
+// Layer aliases
+// ---------------------------------------------------------------------------
+#define BASE  0
+#define SYM_R 1   // L1 — symbols right / Swedish left
+#define VIM   2   // L2 — vim motions right / numbers left
+#define SYM_L 3   // R1 — symbols left
+#define NUMP  4   // R2 — numpad
+#define MOUSE 5   // L1+L2 — F-keys + mouse
+#define SYS   6   // R1+R2 — BT / system
+#define SWAY  7   // L2+R2 — Sway / buffers
+
+// ---------------------------------------------------------------------------
+// Timing — tuned for fast Dvorak typing
+//
+// tapping-term-ms:      How long a hold must be to register as hold vs tap.
+//                       200ms is conservative; drop to 175 once comfortable.
+// require-prior-idle-ms: Key must have been idle this long before HRM hold
+//                        triggers. Prevents misfires mid-roll. 150ms is safe
+//                        for ~80wpm; lower to 120 at higher speeds.
+// quick-tap-ms:         Tap then hold within this window = repeat, not mod.
+//                       Useful for held backspace/space.
+// ---------------------------------------------------------------------------
+#define HRM_TAPPING_TERM  200
+#define HRM_IDLE          150
+#define COMBO_TERM         40
+
+// ---------------------------------------------------------------------------
+// HRM behaviour — hold-preferred with prior-idle guard
+// ---------------------------------------------------------------------------
 / {
+    behaviors {
+        hml: hrm_left {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <HRM_TAPPING_TERM>;
+            require-prior-idle-ms = <HRM_IDLE>;
+            quick-tap-ms = <175>;
+            hold-trigger-key-positions = <
+                /* right hand keys — allow left HRM to fire when right hand presses */
+                6 7 8 9 10 11
+                18 19 20 21 22 23
+                30 31 32 33 34 35
+                39 40 41
+            >;
+            hold-trigger-on-release;
+            bindings = <&kp>, <&kp>;
+        };
+
+        hmr: hrm_right {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <HRM_TAPPING_TERM>;
+            require-prior-idle-ms = <HRM_IDLE>;
+            quick-tap-ms = <175>;
+            hold-trigger-key-positions = <
+                /* left hand keys — allow right HRM to fire when left hand presses */
+                0 1 2 3 4 5
+                12 13 14 15 16 17
+                24 25 26 27 28 29
+                36 37 38
+            >;
+            hold-trigger-on-release;
+            bindings = <&kp>, <&kp>;
+        };
+
+        /* Layer-tap with same timing for thumb keys */
+        lt_spc: layer_tap_space {
+            compatible = "zmk,behavior-hold-tap";
+            #binding-cells = <2>;
+            flavor = "balanced";
+            tapping-term-ms = <200>;
+            quick-tap-ms = <175>;
+            bindings = <&mo>, <&kp>;
+        };
+    };
+
+// ---------------------------------------------------------------------------
+// Combos
+// ---------------------------------------------------------------------------
+    combos {
+        compatible = "zmk,combos";
+
+        /* L1 + R1 thumbs simultaneously → one-shot shift */
+        combo_osm_shift {
+            timeout-ms = <COMBO_TERM>;
+            key-positions = <36 41>;   /* L1 thumb + R1 thumb */
+            bindings = <&sk LSHIFT>;
+        };
+
+        /* Number layer bracket combos — only active on VIM layer */
+        /* Key positions on left hand num block (see VIM layer comments) */
+        /* Row mapping: 1=pos13, 2=pos14, 3=pos15  4=pos25, 5=pos26, 6=pos27
+                        7=pos25 ... adjust to your actual key-positions      */
+
+        combo_num_lparen {   /* 1+2 → ( */
+            timeout-ms = <COMBO_TERM>;
+            key-positions = <13 14>;
+            layers = <VIM>;
+            bindings = <&kp LPAR>;
+        };
+        combo_num_rparen {   /* 2+3 → ) */
+            timeout-ms = <COMBO_TERM>;
+            key-positions = <14 15>;
+            layers = <VIM>;
+            bindings = <&kp RPAR>;
+        };
+        combo_num_lbkt {    /* 4+5 → [ */
+            timeout-ms = <COMBO_TERM>;
+            key-positions = <25 26>;
+            layers = <VIM>;
+            bindings = <&kp LBKT>;
+        };
+        combo_num_rbkt {    /* 5+6 → ] */
+            timeout-ms = <COMBO_TERM>;
+            key-positions = <26 27>;
+            layers = <VIM>;
+            bindings = <&kp RBKT>;
+        };
+        combo_num_lbrc {    /* 7+8 → { */
+            timeout-ms = <COMBO_TERM>;
+            key-positions = <1 2>;
+            layers = <VIM>;
+            bindings = <&kp LBRC>;
+        };
+        combo_num_rbrc {    /* 8+9 → } */
+            timeout-ms = <COMBO_TERM>;
+            key-positions = <2 3>;
+            layers = <VIM>;
+            bindings = <&kp RBRC>;
+        };
+    };
+
+// ---------------------------------------------------------------------------
+// Tri-layer bindings (L1+L2 → MOUSE, R1+R2 → SYS, L2+R2 → SWAY)
+// ---------------------------------------------------------------------------
+    conditional_layers {
+        compatible = "zmk,conditional-layers";
+
+        tri_mouse {
+            if-layers = <SYM_R VIM>;
+            then-layer = <MOUSE>;
+        };
+        tri_sys {
+            if-layers = <SYM_L NUMP>;
+            then-layer = <SYS>;
+        };
+        tri_sway {
+            if-layers = <VIM NUMP>;
+            then-layer = <SWAY>;
+        };
+    };
+
+// ---------------------------------------------------------------------------
+// Keymap
+// ---------------------------------------------------------------------------
     keymap {
         compatible = "zmk,keymap";
 
+        // -------------------------------------------------------------------
+        // 0: BASE — Dvorak + HRM
+        //
+        // HRM assignments (hold=mod, tap=key):
+        //   A → GUI   O → ALT   U → CTL   (left hand, pinky→index)
+        //   H → CTL   N → ALT   S → GUI   (right hand, index→pinky)
+        //
+        // Outer bottom column:
+        //   Left:  CAPS_WORD
+        //   Right: &trans (reserved — physical fallback once HRM feels good)
+        //
+        // ┌──────┬──────┬──────┬──────┬──────┬──────┐ ┌──────┬──────┬──────┬──────┬──────┬──────┐
+        // │  TAB │  '   │  ,   │  .   │  P   │  Y   │ │  F   │  G   │  C   │  R   │  L   │ ENT  │
+        // │  ESC │ GUI/A│ ALT/O│ SFT/E│ CTL/U│  I   │ │  D   │ CTL/H│ SFT/T│ ALT/N│ GUI/S│  ;   │
+        // │ CAPS │  /   │  Q   │  J   │  K   │  X   │ │  B   │  M   │  W   │  V   │  Z   │trans │
+        // └──────┴──────┴──────┼──────┼──────┼──────┤ ├──────┼──────┼──────┼──────┴──────┴──────┘
+        //                      │ SFT  │  L1  │ SPC  │ │ BSP  │  R2  │ SFT  │
+        //                      └──────┴──────┴──────┘ └──────┴──────┴──────┘
+        //                      (R1 is right thumb → mo SYM_L)
+        // -------------------------------------------------------------------
         default_layer {
             bindings = <
-&kp TAB    &kp SQT    &kp COMMA  &kp DOT     &kp P  &kp Y        &kp F     &kp G  &kp C     &kp R  &kp L  &kp RET
-&kp ESC    &kp A      &kp O      &kp E       &kp U  &kp I        &kp D     &kp H  &kp T     &kp N  &kp S  &kp SEMI
-&kp LCTRL  &kp SLASH  &kp Q      &kp J       &kp K  &kp X        &kp B     &kp M  &kp W     &kp V  &kp Z  &kp LGUI
-                                 &kp LSHIFT  &mo 1  &kp SPACE    &kp BSPC  &mo 2  &kp LALT
+&kp TAB     &kp SQT          &kp COMMA       &kp DOT          &kp P           &kp Y       &kp F     &kp G            &kp C            &kp R           &kp L          &kp RET
+&kp ESC     &hml LGUI A      &hml LALT O     &hml LSHIFT E    &hml LCTRL U    &kp I       &kp D     &hmr RCTRL H     &hmr RSHIFT T    &hmr RALT N     &hmr RGUI S    &kp SEMI
+&caps_word  &kp SLASH        &kp Q           &kp J            &kp K           &kp X       &kp B     &kp M            &kp W            &kp V           &kp Z          &trans
+                                             &kp LSHIFT       &mo SYM_R       &kp SPACE   &kp BSPC  &mo NUMP         &kp LSHIFT
             >;
         };
 
-        raise_layer {
+        // -------------------------------------------------------------------
+        // 1: SYM_R (L1) — Symbols right hand / Swedish left hand
+        //
+        // Left hand: Swedish characters on home row (å ä ö)
+        //            using RA() = Right Alt / AltGr for Swedish input
+        //            (requires OS Swedish layout or custom key codes)
+        //
+        // Right hand: Core coding symbols
+        //   Top:    !  @  #  $  %
+        //   Home:   -  (  )  =  \
+        //   Bottom: _  {  }  +  |
+        //
+        // ┌──────┬──────┬──────┬──────┬──────┬──────┐ ┌──────┬──────┬──────┬──────┬──────┬──────┐
+        // │      │      │      │      │      │      │ │  !   │  @   │  #   │  $   │  %   │      │
+        // │      │      │  Å   │  Ä   │  Ö   │      │ │  -   │  (   │  )   │  =   │  \   │      │
+        // │      │      │      │      │      │      │ │  _   │  {   │  }   │  +   │  |   │      │
+        // └──────┴──────┴──────┼──────┼──────┼──────┤ ├──────┼──────┼──────┼──────┴──────┴──────┘
+        //                      │      │[held]│      │ │      │      │      │
+        //                      └──────┴──────┴──────┘ └──────┴──────┴──────┘
+        // -------------------------------------------------------------------
+        sym_r_layer {
             bindings = <
-&kp TAB    &kp RA(P)     &kp N1     &kp N2    &kp N3  &kp N0    &mmv MOVE_LEFT  &mmv MOVE_DOWN  &mmv MOVE_UP  &mmv MOVE_RIGHT  &trans  &kp RET
-&kp ESC    &kp RA(W)     &kp N4     &kp N5    &kp N6  &kp N0    &kp LEFT        &kp DOWN        &kp UP        &kp RIGHT        &kp N   &kp LS(N)
-&kp LCTRL  &kp RA(Q)     &kp N7     &kp N8    &kp N9  &kp N0    &kp PRCNT       &kp B           &kp W         &kp E           &kp V  &kp LGUI
-                           &kp LSHIFT  &trans   &kp SPACE    &kp BSPC        &mo 3          &kp LALT
+&trans  &trans       &trans       &trans       &trans       &trans      &kp EXCL   &kp AT    &kp HASH  &kp DLLR  &kp PRCNT  &trans
+&trans  &trans       &kp RA(W)    &kp RA(P)    &kp RA(Q)    &trans      &kp MINUS  &kp LPAR  &kp RPAR  &kp EQUAL &kp BSLH   &trans
+&trans  &trans       &trans       &trans       &trans       &trans      &kp UNDER  &kp LBRC  &kp RBRC  &kp PLUS  &kp PIPE   &trans
+                                  &trans       &trans       &trans      &trans     &mo SYS   &trans
             >;
         };
 
-        lower_layer {
+        // -------------------------------------------------------------------
+        // 2: VIM (L2) — Vim motions right / Numbers left
+        //
+        // Left hand numbers — row-based for natural count+motion:
+        //   Top:    -  7  8  9  -
+        //   Home:   0  4  5  6  -
+        //   Bottom: -  1  2  3  -
+        //
+        // Numbers placed so 5j = left index (5) + right index (J) — same row.
+        //
+        // Right hand motions:
+        //   Top:    pgup  -    -    -    -
+        //   Home:   ←    ↓    ↑    →    -
+        //   Bottom: B    C+d  C+u   W    E    (B=back word, W=fwd word, E=end)
+        //           ge   C-d  C-u  w    e
+        //
+        // Ctrl+D/U on bottom row for page scrolling without leaving layer.
+        //
+        // ┌──────┬──────┬──────┬──────┬──────┬──────┐ ┌──────┬──────┬──────┬──────┬──────┬──────┐
+        // │      │  7   │  8   │  9   │      │      │ │ PGUP │      │      │      │      │      │
+        // │      │  4   │  5   │  6   │  0   │      │ │  ←   │  ↓   │  ↑   │  →   │      │      │
+        // │      │  1   │  2   │  3   │      │      │ │  B   │ C+d  │ C+u  │  W   │  E   │      │
+        // └──────┴──────┴──────┼──────┼──────┼──────┤ ├──────┼──────┼──────┼──────┴──────┴──────┘
+        //                      │      │[held]│      │ │      │      │      │
+        //                      └──────┴──────┴──────┘ └──────┴──────┴──────┘
+        // -------------------------------------------------------------------
+        vim_layer {
             bindings = <
-&kp TAB    &kp EXCL   &kp AT     &kp HASH    &kp DLLR  &kp PRCNT    &kp CARET  &kp AMPS  &kp ASTRK  &kp LPAR   &kp RPAR       &kp RET
-&kp ESC    &kp SQT    &kp DQT    &kp LPAR    &kp RPAR  &kp GRAVE    &kp MINUS  &kp LBKT  &kp RBKT   &kp EQUAL  &kp BACKSLASH  &kp GRAVE
-&kp LCTRL  &kp QMARK  &kp SLASH  &kp LT      &kp GT    &kp TILDE    &kp UNDER  &kp LBRC  &kp RBRC   &kp PLUS   &kp PIPE       &kp LGUI
-                                 &kp LSHIFT  &mo 3    &kp SPACE    &kp BSPC   &trans     &kp LALT
+&trans  &kp N7  &kp N8  &kp N9  &trans  &trans      &kp PG_UP  &trans      &trans    &trans     &trans  &trans
+&trans  &kp N4  &kp N5  &kp N6  &kp N0  &trans      &kp LEFT   &kp DOWN    &kp UP    &kp RIGHT  &trans  &trans
+&trans  &kp N1  &kp N2  &kp N3  &trans  &trans      &kp B      &kp LC(D)   &kp LC(U) &kp W      &kp E   &trans
+                        &trans  &trans  &trans      &trans     &mo SWAY    &trans
             >;
         };
 
-        meta_layer {
+        // 3: SYM_L (R1) — Symbols left hand
+        // Left:  ^ & * ~ ` / ; [ ] ' " : < > ?
+        // Right: transparent (free for HRM mods simultaneously)
+        // -------------------------------------------------------------------
+        sym_l_layer {
             bindings = <
-&kp C_VOLUME_UP  &kp C_BRI_UP  &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3    &mkp MB1   &msc SCRL_DOWN  &msc SCRL_UP  &mkp MB3  &mkp MB4    &kp MB5
-&kp C_VOL_DN     &kp C_BRI_DN  &bt BT_NXT    &bt BT_PRV    &bt BT_CLR    &bt BT_SEL 4    &kp UNDER  &kp LC(D)       &kp LC(U)     &kp DLLR  &kp N       &kp P
-&kp C_MUTE       &kp C_PP      &kp C_NEXT    &kp C_PREV    &sys_reset    &bootloader     &kp HASH   &kp LS(B)       &kp LS(W)     &kp LS(E) &kp LS(V)   &mkp MB2
-                                             &trans        &trans        &trans          &trans     &trans          &trans
+&trans  &kp CARET  &kp AMPS  &kp ASTRK  &kp TILDE  &kp GRAVE    &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &kp SEMI   &kp LBKT  &kp RBKT   &kp SQT    &kp DQT      &trans  &trans  &trans  &trans  &trans  &trans
+&trans  &kp COLON  &kp LT    &kp GT     &kp QMARK  &kp SLASH    &trans  &trans  &trans  &trans  &trans  &trans
+                              &trans     &mo SYS    &trans       &trans  &trans  &trans
+            >;
+        };
+
+        // -------------------------------------------------------------------
+        // 4: NUMP (R2) — Numpad
+        // Right: brackets top, 7-9 home, 4-6 mid, BSP on pinky
+        // Thumb: 1 / 0 / .  — no crossing needed
+        // Left:  transparent (free for HRM mods)
+        // -------------------------------------------------------------------
+        numpad_layer {
+            bindings = <
+&trans  &trans  &trans  &trans  &trans  &trans      &kp LPAR  &kp RPAR  &kp LBKT  &kp RBKT  &kp DEL   &trans
+&trans  &trans  &trans  &trans  &trans  &trans      &kp N7    &kp N8    &kp N9    &kp PLUS  &kp BSPC  &trans
+&trans  &trans  &trans  &trans  &trans  &trans      &kp N4    &kp N5    &kp N6    &kp MINUS &kp RET   &trans
+                        &trans  &trans  &kp N1      &kp N0    &trans    &kp DOT
+            >;
+        };
+
+        // -------------------------------------------------------------------
+        // 5: MOUSE (L1+L2) — F-keys left / Mouse right
+        // Left:  F1-F12
+        // Right: mouse move UDLR, scroll, MB1-MB5
+        // -------------------------------------------------------------------
+        mouse_layer {
+            bindings = <
+&trans  &kp F1   &kp F2   &kp F3  &kp F4  &kp F5      &trans          &mkp MB4        &mkp MB3      &mkp MB5         &trans    &trans
+&trans  &kp F6   &kp F7   &kp F8  &kp F9  &kp F10     &mmv MOVE_LEFT  &mmv MOVE_DOWN  &mmv MOVE_UP  &mmv MOVE_RIGHT  &trans    &trans
+&trans  &kp F11  &kp F12  &trans  &trans  &trans      &msc SCRL_DOWN  &msc SCRL_UP    &trans        &mkp MB1         &mkp MB2  &trans
+                           &trans  &trans  &trans      &trans          &trans          &trans
+            >;
+        };
+
+        // -------------------------------------------------------------------
+        // 6: SYS (R1+R2) — Bluetooth / System
+        // Left:  BT select 0-4, BT next/prev/clear, media
+        // Right: volume, brightness, sys_reset, bootloader
+        // -------------------------------------------------------------------
+        sys_layer {
+            bindings = <
+&trans  &bt BT_SEL 0  &bt BT_SEL 1  &bt BT_SEL 2  &bt BT_SEL 3  &bt BT_SEL 4    &kp C_VOL_UP  &kp C_BRI_UP  &trans      &trans       &trans  &trans
+&trans  &bt BT_NXT    &bt BT_PRV    &bt BT_CLR    &trans        &trans          &kp C_VOL_DN  &kp C_BRI_DN  &trans      &trans       &trans  &trans
+&trans  &kp C_MUTE    &kp C_PP      &kp C_NEXT    &kp C_PREV    &trans          &trans        &trans        &sys_reset  &bootloader  &trans  &trans
+                                    &trans        &trans        &trans          &trans        &trans        &trans
+            >;
+        };
+
+        // -------------------------------------------------------------------
+        // 7: SWAY (L2+R2) — Sway WM + buffer switching
+        // Left home:  LG(1-5) Sway workspaces (Super+N)
+        // Right home: LA(6-0) buffer/tab switch (Alt+N)
+        // Change LG() to LC() if your Sway MOD key is Ctrl.
+        // -------------------------------------------------------------------
+        sway_layer {
+            bindings = <
+&trans  &trans      &trans      &trans      &trans      &trans          &trans      &trans      &trans      &trans      &trans      &trans
+&trans  &kp LG(N1)  &kp LG(N2)  &kp LG(N3)  &kp LG(N4)  &kp LG(N5)      &kp LA(N6)  &kp LA(N7)  &kp LA(N8)  &kp LA(N9)  &kp LA(N0)  &trans
+&trans  &trans      &trans      &trans      &trans      &trans          &trans      &trans      &trans      &trans      &trans      &trans
+                                &trans      &trans      &trans          &trans      &trans      &trans
             >;
         };
     };
