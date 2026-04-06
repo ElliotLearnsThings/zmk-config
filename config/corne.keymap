@@ -201,34 +201,33 @@
 // ---------------------------------------------------------------------------
 // Keymap
 // ---------------------------------------------------------------------------
-    keymap {
+keymap {
         compatible = "zmk,keymap";
-
         // -------------------------------------------------------------------
-        // 0: BASE — Dvorak + HRM
+        // 0: BASE — QWERTY + HRM
         //
         // HRM assignments (hold=mod, tap=key):
-        //   A → GUI   O → ALT   U → CTL   (left hand, pinky→index)
-        //   H → CTL   N → ALT   S → GUI   (right hand, index→pinky)
+        //   A → GUI   S → ALT   D → SFT   F → CTL   (left hand, pinky→index)
+        //   J → CTL   K → SFT   L → ALT   ; → GUI   (right hand, index→pinky)
         //
         // Outer bottom column:
         //   Left:  CAPS_WORD
         //   Right: &trans (reserved — physical fallback once HRM feels good)
         //
         // ┌──────┬──────┬──────┬──────┬──────┬──────┐ ┌──────┬──────┬──────┬──────┬──────┬──────┐
-        // │  TAB │  '   │  ,   │  .   │  P   │  Y   │ │  F   │  G   │  C   │  R   │  L   │ ENT  │
-        // │  ESC │ GUI/A│ ALT/O│ SFT/E│ CTL/U│  I   │ │  D   │ CTL/H│ SFT/T│ ALT/N│ GUI/S│  ;   │
-        // │ CAPS │  /   │  Q   │  J   │  K   │  X   │ │  B   │  M   │  W   │  V   │  Z   │trans │
+        // │  TAB │  Q   │  W   │  E   │  R   │  T   │ │  Y   │  U   │  I   │  O   │  P   │ ENT  │
+        // │  ESC │ GUI/A│ ALT/S│ SFT/D│ CTL/F│  G   │ │  H   │ CTL/J│ SFT/K│ ALT/L│ GUI/;│  '   │
+        // │ CAPS │  Z   │  X   │  C   │  V   │  B   │ │  N   │  M   │  ,   │  .   │  /   │trans │
         // └──────┴──────┴──────┼──────┼──────┼──────┤ ├──────┼──────┼──────┼──────┴──────┴──────┘
         //                      │ SFT  │  L1  │ SPC  │ │ BSP  │  R2  │ SFT  │
         //                      └──────┴──────┴──────┘ └──────┴──────┴──────┘
         //                      (R1 is right thumb → mo SYM_L)
         // -------------------------------------------------------------------
         default_layer {
-            bindings = <
-&kp TAB     &kp SQT          &kp COMMA       &kp DOT          &kp P           &kp Y       &kp F     &kp G            &kp C            &kp R           &kp L          &kp RET
-&kp ESC     &hml LGUI A      &hml LALT O     &hml LSHIFT E    &hml LCTRL U    &kp I       &kp D     &hmr RCTRL H     &hmr RSHIFT T    &hmr RALT N     &hmr RGUI S    &kp SEMI
-&caps_word  &kp SLASH        &kp Q           &kp J            &kp K           &kp X       &kp B     &kp M            &kp W            &kp V           &kp Z          &trans
+            bindings = 
+&kp TAB     &kp Q            &kp W           &kp E            &kp R           &kp T       &kp Y     &kp U            &kp I            &kp O           &kp P          &kp RET
+&kp ESC     &hml LGUI A      &hml LALT S     &hml LSHIFT D    &hml LCTRL F    &kp G       &kp H     &hmr RCTRL J     &hmr RSHIFT K    &hmr RALT L     &hmr RGUI SEMI &kp SQT
+&caps_word  &kp Z            &kp X           &kp C            &kp V           &kp B       &kp N     &kp M            &kp COMMA        &kp DOT         &kp SLASH      &trans
                                              &kp LSHIFT       &mo SYM_R       &kp SPACE   &kp BSPC  &mo NUMP         &kp LSHIFT
             >;
         };
